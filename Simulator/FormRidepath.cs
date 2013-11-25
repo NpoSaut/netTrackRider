@@ -9,6 +9,10 @@ using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.IO;
 using System.IO.Ports;
+using BlokFrames;
+using Communications.Appi;
+using Communications.Appi.Winusb;
+using Communications.Can;
 using Simulator.GPS;
 using System.Net;
 using System.Net.Sockets;
@@ -28,6 +32,7 @@ namespace Simulator
         public List<TrackObjectRecord> trackObjects = new List<TrackObjectRecord>();
         public string targetdistancesFile = null;
 
+        public CanPort Port { get; private set; }
 
         public FormRidepath()
         {
@@ -35,6 +40,14 @@ namespace Simulator
             InitializeRidedistanceChart();
             InitializeGpsEmulation();
             InitializeNetworkInterop();
+            InitializeCan();
+        }
+
+        private void InitializeCan()
+        {
+            var dev = WinusbAppiDev.GetDevices().First(ds => ds.IsFree).OpenDevice();
+            this.Port = dev.CanPorts[AppiLine.Can1];
+            this.Closed += (Sender, Args) => dev.Dispose();     // Не хорошо, конечно. Но лучше так, чем никак :D
         }
 
         private void InitializeRidedistanceChart()
@@ -407,7 +420,39 @@ namespace Simulator
 
                 GeoCoordinate gc = databaseParser.GetTrackCoordinate(this.distance_on_track);
 
-                Console.WriteLine("Coordinate is {0}", gc);
+            var CanSet = new CanFrame[]
+                         {
+                             new MmAltLongFrame()
+                             {
+                                 Latitude = gc.Latitude,
+                                 Longitude = gc.Longitude,
+                                 Reliable = cbGpsIsValid.Checked
+                             },
+                             new IpdEmulation()
+                             {
+                                 Sensor1State = new IpdEmulation.SensorState()
+                                                {
+                                                    Direction = IpdEmulation.RorationDirection.Clockwise,
+                                                    Frequncy = (int)(speed_ms * 42 / (1.050 * Math.PI)),
+                                                    Channel1Condition = IpdEmulation.ChannelCondition.Good,
+                                                    Channel2Condition = IpdEmulation.ChannelCondition.Good
+                                                },
+                                 Sensor2State = new IpdEmulation.SensorState()
+                                                {
+                                                    Direction = IpdEmulation.RorationDirection.Clockwise,
+                                                    Frequncy = 0,
+                                                    Channel1Condition = IpdEmulation.ChannelCondition.Bad,
+                                                    Channel2Condition = IpdEmulation.ChannelCondition.Bad
+                                                }
+                             }
+                         };
+
+            foreach (var canFrame in CanSet)
+            {
+                Console.WriteLine(canFrame);
+            }
+                
+                Port.Send(CanSet);
 
                 if (GEIsReady)
                 {

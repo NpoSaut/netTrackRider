@@ -100,9 +100,9 @@
             // 
             // pnlFunctional
             // 
-            this.pnlFunctional.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.pnlFunctional.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.pnlFunctional.Controls.Add(this.cbEnableTOMessages);
             this.pnlFunctional.Controls.Add(this.btnClearRuler);
             this.pnlFunctional.Controls.Add(this.lblRuler);
@@ -396,9 +396,9 @@
             // 
             // chartRidedistance
             // 
-            this.chartRidedistance.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.chartRidedistance.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             chartArea1.AxisX.MajorGrid.Enabled = false;
             chartArea1.AxisY.Interval = 10D;
             chartArea1.AxisY.MajorGrid.Enabled = false;
@@ -447,7 +447,7 @@
             // 
             // tmrSpeed
             // 
-            this.tmrSpeed.Interval = 1000;
+            this.tmrSpeed.Interval = 500;
             this.tmrSpeed.Tick += new System.EventHandler(this.tmrSpeed_Tick);
             // 
             // FormRidepath
