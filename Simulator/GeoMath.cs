@@ -52,6 +52,8 @@ namespace Simulator
         {
             return !(gc1 == gc2);
         }
+
+        public override string ToString() { return string.Format("Longitude: {0}, Latitude: {1}", Longitude, Latitude); }
     }
 
     public class GeoMath

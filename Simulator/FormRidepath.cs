@@ -407,6 +407,8 @@ namespace Simulator
 
                 GeoCoordinate gc = databaseParser.GetTrackCoordinate(this.distance_on_track);
 
+                Console.WriteLine("Coordinate is {0}", gc);
+
                 if (GEIsReady)
                 {
                     formGE.AddPointToGpsTrack(gc);
