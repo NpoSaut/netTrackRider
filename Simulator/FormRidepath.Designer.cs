@@ -36,6 +36,7 @@
             this.btnDatabase = new System.Windows.Forms.Button();
             this.openDatabaseDialog = new System.Windows.Forms.OpenFileDialog();
             this.pnlFunctional = new System.Windows.Forms.Panel();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.cbEnableTOMessages = new System.Windows.Forms.CheckBox();
             this.btnClearRuler = new System.Windows.Forms.Button();
             this.lblRuler = new System.Windows.Forms.Label();
@@ -66,6 +67,7 @@
             this.btnGE = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.tmrSpeed = new System.Windows.Forms.Timer(this.components);
+            this.tmrSpeedPump = new System.Windows.Forms.Timer(this.components);
             this.pnlFunctional.SuspendLayout();
             this.gbGps.SuspendLayout();
             this.pnlGpsCom.SuspendLayout();
@@ -103,6 +105,7 @@
             this.pnlFunctional.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.pnlFunctional.Controls.Add(this.checkBox1);
             this.pnlFunctional.Controls.Add(this.cbEnableTOMessages);
             this.pnlFunctional.Controls.Add(this.btnClearRuler);
             this.pnlFunctional.Controls.Add(this.lblRuler);
@@ -126,6 +129,18 @@
             this.pnlFunctional.Name = "pnlFunctional";
             this.pnlFunctional.Size = new System.Drawing.Size(899, 501);
             this.pnlFunctional.TabIndex = 3;
+            // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.checkBox1.Location = new System.Drawing.Point(370, 310);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(39, 14);
+            this.checkBox1.TabIndex = 20;
+            this.checkBox1.Text = "XXX";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
             // 
             // cbEnableTOMessages
             // 
@@ -447,8 +462,13 @@
             // 
             // tmrSpeed
             // 
-            this.tmrSpeed.Interval = 500;
+            this.tmrSpeed.Interval = 1000;
             this.tmrSpeed.Tick += new System.EventHandler(this.tmrSpeed_Tick);
+            // 
+            // tmrSpeedPump
+            // 
+            this.tmrSpeedPump.Interval = 500;
+            this.tmrSpeedPump.Tick += new System.EventHandler(this.SpeedPump_Tick);
             // 
             // FormRidepath
             // 
@@ -510,5 +530,7 @@
         private System.Windows.Forms.ComboBox cbGpsProtocols;
         private System.Windows.Forms.Label lblGpsProtocol;
         private System.Windows.Forms.Button btnGE;
+        private System.Windows.Forms.Timer tmrSpeedPump;
+        private System.Windows.Forms.CheckBox checkBox1;
     }
 }

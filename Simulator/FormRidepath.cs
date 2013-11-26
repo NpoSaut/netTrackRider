@@ -305,6 +305,7 @@ namespace Simulator
             chartRidedistance.Series["SeriesRidingMarker"].Points.AddXY(this.distance_on_track, 0);
             this.chartRidedistance.Series["SeriesRidingMarker"].Label = ((this.distance_on_track - this.chartRidedistance.Series["SeriesStartMarker"].Points[0].XValue) / 1000).ToString("0.00");
             tmrSpeed.Enabled = true;
+            tmrSpeedPump.Enabled = true;
 
             if (comPortFound)
             {
@@ -391,6 +392,7 @@ namespace Simulator
         private void btnStop_Click(object sender, EventArgs e)
         {
             tmrSpeed.Enabled = false;
+            tmrSpeedPump.Enabled = false;
             if (comPortFound && comPort.IsOpen)
             {
                 comPort.DiscardOutBuffer();
@@ -405,93 +407,86 @@ namespace Simulator
         private void tmrSpeed_Tick(object sender, EventArgs e)
         {
             double d = speed_ms * (tmrSpeed.Interval / 1000);
-            
-            this.distance_on_track += speed_ms * (tmrSpeed.Interval / 1000); // distance_in_tick: m = (m/s) * ((ms/1000) = s)
+
+            this.distance_on_track += speed_ms * (tmrSpeed.Interval / 1000);
+                // distance_in_tick: m = (m/s) * ((ms/1000) = s)
 
             if (this.distance_on_track > this.trackLength) this.distance_on_track = this.trackLength;
 
             //if (this.distance_on_track < this.trackLength)
             //{
-                chartRidedistance.Series[1].Points.AddXY(this.distance_on_track, 0);
-                chartRidedistance.Series["SeriesRidingMarker"].Points.Clear();
-                chartRidedistance.Series["SeriesRidingMarker"].Points.AddXY(this.distance_on_track, 0);
-                this.chartRidedistance.Series["SeriesRidingMarker"].Label = ((this.distance_on_track - this.chartRidedistance.Series["SeriesStartMarker"].Points[0].XValue) / 1000).ToString("0.00");
+            chartRidedistance.Series[1].Points.AddXY(this.distance_on_track, 0);
+            chartRidedistance.Series["SeriesRidingMarker"].Points.Clear();
+            chartRidedistance.Series["SeriesRidingMarker"].Points.AddXY(this.distance_on_track, 0);
+            this.chartRidedistance.Series["SeriesRidingMarker"].Label =
+                ((this.distance_on_track - this.chartRidedistance.Series["SeriesStartMarker"].Points[0].XValue) / 1000)
+                    .ToString("0.00");
 
 
-                GeoCoordinate gc = databaseParser.GetTrackCoordinate(this.distance_on_track);
+            GeoCoordinate gc = databaseParser.GetTrackCoordinate(this.distance_on_track);
 
-            var CanSet = new CanFrame[]
+            var canSet = new CanFrame[]
                          {
                              new MmAltLongFrame()
                              {
                                  Latitude = gc.Latitude,
                                  Longitude = gc.Longitude,
                                  Reliable = cbGpsIsValid.Checked
-                             },
-                             new IpdEmulation()
-                             {
-                                 Sensor1State = new IpdEmulation.SensorState()
-                                                {
-                                                    Direction = IpdEmulation.RorationDirection.Clockwise,
-                                                    Frequncy = (int)(speed_ms * 42 / (1.050 * Math.PI)),
-                                                    Channel1Condition = IpdEmulation.ChannelCondition.Good,
-                                                    Channel2Condition = IpdEmulation.ChannelCondition.Good
-                                                },
-                                 Sensor2State = new IpdEmulation.SensorState()
-                                                {
-                                                    Direction = IpdEmulation.RorationDirection.Clockwise,
-                                                    Frequncy = 0,
-                                                    Channel1Condition = IpdEmulation.ChannelCondition.Bad,
-                                                    Channel2Condition = IpdEmulation.ChannelCondition.Bad
-                                                }
                              }
                          };
 
-            foreach (var canFrame in CanSet)
+            foreach (var canFrame in canSet)
             {
                 Console.WriteLine(canFrame);
             }
-                
-                Port.Send(CanSet);
 
-                if (GEIsReady)
+            Port.Send(canSet);
+
+            if (GEIsReady)
+            {
+                formGE.AddPointToGpsTrack(gc);
+                formGE.ShiftLookAt(gc.Latitude, gc.Longitude, -1);
+            }
+
+            gpsProtocol.CurrentSpeed = speed_ms;
+            gpsProtocol.IsValid = cbGpsIsValid.Checked ? true : false;
+            GPSDatum gd = new GPSDatum(gc);
+            byte[] buffer = gpsProtocol.GetPacket(gd);
+            if (comPortFound)
+            {
+                comPort.Write(buffer, 0, buffer.Length);
+                comPort.BaseStream.Flush();
+            }
+
+            rtbDisplay.AppendText(gpsProtocol.GetPacketString() + "\r\n");
+            rtbDisplay.ScrollToCaret();
+
+
+
+            // Sending track objects
+            if (this.trackObjects.Count > 0 && this.closestTrackObjectIndex > -1)
+            {
+                if (this.distance_on_track - this.trackObjects[this.closestTrackObjectIndex].Distance > 0)
                 {
-                    formGE.AddPointToGpsTrack(gc);
-                    formGE.ShiftLookAt(gc.Latitude, gc.Longitude, -1);
-                }
-                 
-                gpsProtocol.CurrentSpeed = speed_ms;
-                gpsProtocol.IsValid = cbGpsIsValid.Checked ? true : false;
-                GPSDatum gd = new GPSDatum(gc);
-                byte[] buffer = gpsProtocol.GetPacket(gd);
-                if (comPortFound)
-                {
-                    comPort.Write(buffer, 0, buffer.Length);
-                    comPort.BaseStream.Flush();
-                }                
-
-                rtbDisplay.AppendText(gpsProtocol.GetPacketString() + "\r\n");
-                rtbDisplay.ScrollToCaret();
-
-
-                
-                // Sending track objects
-                if (this.trackObjects.Count > 0 && this.closestTrackObjectIndex > -1)
-                {
-                    if (this.distance_on_track - this.trackObjects[this.closestTrackObjectIndex].Distance > 0)
+                    if (cbEnableTOMessages.Checked)
                     {
-                        if (cbEnableTOMessages.Checked)
-                        {
-                            int sent = udp_sending_socket.SendTo(this.trackObjects[this.closestTrackObjectIndex].TReceptionDataExBytes, 32, SocketFlags.None, this.remote_sendto_endpoint);
-                        }
-                        this.closestTrackObjectIndex++;
+                        int sent =
+                            udp_sending_socket.SendTo(
+                                                      this.trackObjects[this.closestTrackObjectIndex]
+                                                          .TReceptionDataExBytes, 32, SocketFlags.None,
+                                                      this.remote_sendto_endpoint);
                     }
-                    else
-                    {
-                        double distanceToClosestTrackObject = (this.trackObjects[this.closestTrackObjectIndex].Distance - this.distance_on_track) / 1000;
-                        this.lblClosestTrackObject.Text = "Ближайший объект: " + distanceToClosestTrackObject.ToString("0.00000").Replace(',', '.') + " км";
-                    }
+                    this.closestTrackObjectIndex++;
                 }
+                else
+                {
+                    double distanceToClosestTrackObject = (this.trackObjects[this.closestTrackObjectIndex].Distance
+                                                           - this.distance_on_track) / 1000;
+                    this.lblClosestTrackObject.Text = "Ближайший объект: "
+                                                      + distanceToClosestTrackObject.ToString("0.00000")
+                                                                                    .Replace(',', '.') + " км";
+                }
+            }
 
 
             /*}
@@ -503,10 +498,10 @@ namespace Simulator
                 this.btnStop_Click(this, new EventArgs());
             }*/
 
-                if (this.distance_on_track >= this.trackLength)
-                {
-                    this.btnStop_Click(this, new EventArgs());
-                }
+            if (this.distance_on_track >= this.trackLength)
+            {
+                this.btnStop_Click(this, new EventArgs());
+            }
         }
 
 
@@ -1214,6 +1209,44 @@ namespace Simulator
                 d += s;
             }
             sw.Close();
+        }
+
+        private bool ReverseRotator { get; set; }
+
+        private void SpeedPump_Tick(object sender, EventArgs e)
+        {
+            var canSet = new CanFrame[]
+                         {
+                             new IpdEmulation()
+                             {
+                                 Sensor1State = new IpdEmulation.SensorState()
+                                                {
+                                                    Direction = (speed_ms > 0 ^ ReverseRotator) ? IpdEmulation.RorationDirection.Clockwise : IpdEmulation.RorationDirection.Counterclockwise,
+                                                    Frequncy = (int)(Math.Abs(speed_ms) * 42 / (1.050 * Math.PI)),
+                                                    Channel1Condition = IpdEmulation.ChannelCondition.Good,
+                                                    Channel2Condition = IpdEmulation.ChannelCondition.Good
+                                                },
+                                 Sensor2State = new IpdEmulation.SensorState()
+                                                {
+                                                    Direction = IpdEmulation.RorationDirection.Clockwise,
+                                                    Frequncy = 0,
+                                                    Channel1Condition = IpdEmulation.ChannelCondition.Bad,
+                                                    Channel2Condition = IpdEmulation.ChannelCondition.Bad
+                                                }
+                             }
+                         };
+
+            foreach (var canFrame in canSet)
+            {
+                Console.WriteLine(canFrame);
+            }
+
+            Port.Send(canSet);
+        }
+
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            ReverseRotator = ((CheckBox)sender).Checked;
         }
     }
 
