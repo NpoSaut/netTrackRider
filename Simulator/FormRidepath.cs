@@ -45,9 +45,16 @@ namespace Simulator
 
         private void InitializeCan()
         {
-            var dev = WinusbAppiDev.GetDevices().First(ds => ds.IsFree).OpenDevice();
-            this.Port = dev.CanPorts[AppiLine.Can1];
-            this.Closed += (Sender, Args) => dev.Dispose();     // Не хорошо, конечно. Но лучше так, чем никак :D
+            try
+            {
+                var dev = WinusbAppiDev.GetDevices().First(ds => ds.IsFree).OpenDevice();
+                this.Port = dev.CanPorts[AppiLine.Can1];
+                this.Closed += (Sender, Args) => dev.Dispose();     // Не хорошо, конечно. Но лучше так, чем никак :D
+            } catch (Exception exception)
+            {
+                MessageBox.Show(string.Format("Не удалось водключиться к АППИ:\n{0}\n\nПопробуйте переподключить АППИ и перезапустить программу.", exception.Message),
+                                "Ошибка при подключении к АППИ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void InitializeRidedistanceChart()
